@@ -25,12 +25,10 @@ yarn-error.log*
 .env.production
 .env.development
 
-# SQLite database and journals
-prisma/*.db
+# SQLite temporary journals
 prisma/*.db-journal
 prisma/*.db-wal
 prisma/*.db-shm
-*.db
 *.db-journal
 
 # Operating system files
