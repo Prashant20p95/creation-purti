@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { ShopClient } from "./ShopClient";
 import { ProductItem } from "@/types";
 import { getActiveTaxonomy } from "@/lib/taxonomy";
+import type { Product, Category } from "@prisma/client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
   title: "Shop Handcrafted Gifts & Festive Decor",
@@ -13,13 +14,19 @@ export const metadata = {
 };
 
 export default async function ShopPage() {
-  const dbProducts = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  let dbProducts: Product[] = [];
+  let dbCategories: Category[] = [];
 
-  const dbCategories = await prisma.category.findMany({
-    orderBy: { displayOrder: "asc" },
-  });
+  try {
+    dbProducts = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    dbCategories = await prisma.category.findMany({
+      orderBy: { displayOrder: "asc" },
+    });
+  } catch (err) {
+    console.error("Database query failed on ShopPage:", err);
+  }
 
   const products: ProductItem[] = dbProducts.map((p) => ({
     id: p.id,

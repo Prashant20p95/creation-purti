@@ -5,17 +5,24 @@ import { ShopByOccasion } from "@/components/home/ShopByOccasion";
 import { AvailableGifts } from "@/components/home/AvailableGifts";
 import { getActiveTaxonomy } from "@/lib/taxonomy";
 import { ProductItem } from "@/types";
+import type { Product, Category } from "@prisma/client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const dbProducts = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  let dbProducts: Product[] = [];
+  let dbCategories: Category[] = [];
 
-  const dbCategories = await prisma.category.findMany({
-    orderBy: { displayOrder: "asc" },
-  });
+  try {
+    dbProducts = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    dbCategories = await prisma.category.findMany({
+      orderBy: { displayOrder: "asc" },
+    });
+  } catch (err) {
+    console.error("Database query failed on HomePage:", err);
+  }
 
   const products: ProductItem[] = dbProducts.map((p) => ({
     id: p.id,

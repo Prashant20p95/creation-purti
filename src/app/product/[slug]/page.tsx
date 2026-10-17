@@ -12,12 +12,28 @@ interface Props {
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  try {
+    const products = await prisma.product.findMany({
+      select: { slug: true },
+    });
+    return products.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
-  });
+  let product = null;
+  try {
+    product = await prisma.product.findUnique({
+      where: { slug: params.slug },
+    });
+  } catch (err) {
+    console.error("Error generating product metadata:", err);
+  }
 
   if (!product) {
     return {
@@ -47,24 +63,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+import type { Product } from "@prisma/client";
+
 export default async function ProductDetailPage({ params }: Props) {
-  const dbProduct = await prisma.product.findUnique({
-    where: { slug: params.slug },
-  });
+  let dbProduct: Product | null = null;
+  let relatedDbProducts: Product[] = [];
+
+  try {
+    dbProduct = await prisma.product.findUnique({
+      where: { slug: params.slug },
+    });
+
+    if (dbProduct) {
+      relatedDbProducts = await prisma.product.findMany({
+        where: {
+          id: { not: dbProduct.id },
+          category: dbProduct.category,
+        },
+        take: 4,
+      });
+    }
+  } catch (err) {
+    console.error("Error fetching product detail:", err);
+  }
 
   if (!dbProduct) {
     notFound();
   }
 
-  const relatedDbProducts = await prisma.product.findMany({
-    where: {
-      id: { not: dbProduct.id },
-      category: dbProduct.category,
-    },
-    take: 4,
-  });
-
-  const transformProduct = (p: typeof dbProduct): ProductItem => ({
+  const transformProduct = (p: Product): ProductItem => ({
     id: p.id,
     slug: p.slug,
     title: p.title,
