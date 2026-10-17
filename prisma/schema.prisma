@@ -1,0 +1,108 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id                     String      @id @default(cuid())
+  slug                   String      @unique
+  title                  String
+  subtitle               String?
+  shortDescription       String
+  description            String
+  price                  Float?      // null indicates price awaiting owner confirmation
+  compareAtPrice         Float?
+  isPriceConfirmed       Boolean     @default(false)
+  category               String
+  occasions              String      // Comma-separated or JSON array
+  stock                  Int         @default(10)
+  inStock                Boolean     @default(true)
+  isFeatured             Boolean     @default(false)
+  isBestSeller           Boolean     @default(false)
+  highlights             String      // JSON array of strings
+  dimensions             String?     // Verified dimensions only
+  materials              String?     // Verified materials only
+  includedItems          String?     // Items included in the package
+  customizationAvailable Boolean     @default(false)
+  customizationNote      String?     // e.g. "Custom Letter Choice for marquee light"
+  images                 String      // JSON array of image URLs
+  keywords               String?     // SEO search terms
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  orderItems             OrderItem[]
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique
+  description  String?
+  image        String?
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Order {
+  id                   String      @id @default(cuid())
+  orderNumber          String      @unique
+  customerName         String
+  customerPhone        String
+  customerEmail        String?
+  addressLine1         String
+  addressLine2         String?
+  city                 String
+  state                String
+  pincode              String
+  landmark             String?
+  deliveryInstructions String?
+  subtotal             Float
+  shippingFee          Float       @default(0)
+  discount             Float       @default(0)
+  totalAmount          Float
+  paymentMethod        String      @default("COD") // "COD", "WHATSAPP_CONFIRMED", "TEST_PAYMENT"
+  paymentStatus        String      @default("PENDING") // "PENDING", "PAID", "COD_ON_DELIVERY"
+  orderStatus          String      @default("PENDING") // "PENDING", "CONFIRMED", "PROCESSING", "DISPATCHED", "DELIVERED", "CANCELLED"
+  courierPartner       String?
+  trackingNumber       String?
+  trackingUrl          String?
+  dispatchDate         DateTime?
+  adminNotes           String?
+  notes                String?
+  items                OrderItem[]
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productTitle  String
+  productImage  String?
+  unitPrice     Float
+  quantity      Int      @default(1)
+  totalPrice    Float
+  customization String?
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+}
+
+model StoreSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
